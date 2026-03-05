@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Valorous 2K26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon-cyan:#00f5ff; --neon-magenta:#ff00aa; --neon-gold:#ffd700; --neon-green:#00ff88;
+    --dark-bg:#020408; --dark-surface:#060c14; --dark-card:#0a1628; --dark-sidebar:#080f1e;
+    --border-glow:rgba(0,245,255,0.2); --text-primary:#e8f4f8; --text-muted:#7a9aaa;
+    --danger:#ff4444; --success:#00ff88;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--dark-bg);color:var(--text-primary);font-family:'Rajdhani',sans-serif;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  /* LOGIN SCREEN */
+  .login-screen{position:fixed;inset:0;background:var(--dark-bg);z-index:1000;display:flex;align-items:center;justify-content:center;}
+  .login-screen.hidden{display:none;}
+  .login-box{width:100%;max-width:420px;background:var(--dark-card);border:1px solid var(--neon-cyan);padding:48px 40px;position:relative;margin:20px;}
+  .login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(to right,var(--neon-cyan),var(--neon-magenta));}
+  .login-logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.4rem;color:var(--neon-cyan);text-shadow:0 0 20px var(--neon-cyan);margin-bottom:8px;}
+  .login-sub{font-family:'Share Tech Mono',monospace;font-size:0.7rem;letter-spacing:3px;color:var(--text-muted);margin-bottom:36px;}
+  .login-group{margin-bottom:20px;}
+  .login-group label{display:block;font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:3px;color:var(--text-muted);margin-bottom:6px;}
+  .login-group input{width:100%;background:rgba(0,245,255,0.04);border:1px solid var(--border-glow);color:var(--text-primary);padding:12px 16px;font-family:'Rajdhani',sans-serif;font-size:1rem;outline:none;transition:border-color 0.3s;}
+  .login-group input:focus{border-color:var(--neon-cyan);}
+  .btn-login{width:100%;background:var(--neon-cyan);color:var(--dark-bg);border:none;padding:14px;font-family:'Orbitron',sans-serif;font-weight:900;font-size:0.8rem;letter-spacing:3px;cursor:pointer;transition:all 0.3s;margin-top:8px;}
+  .btn-login:hover{background:var(--neon-gold);box-shadow:0 0 20px rgba(255,215,0,0.3);}
+  .login-hint{font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--text-muted);text-align:center;margin-top:16px;opacity:0.6;}
+  .login-err{color:var(--danger);font-size:0.85rem;margin-top:8px;display:none;}
+
+  /* DASHBOARD LAYOUT */
+  .dashboard{display:flex;min-height:100vh;position:relative;z-index:1;}
+  .dashboard.hidden{display:none;}
+
+  /* SIDEBAR */
+  .sidebar{width:260px;background:var(--dark-sidebar);border-right:1px solid var(--border-glow);padding:32px 0;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;}
+  .sidebar-logo{padding:0 24px 32px;border-bottom:1px solid var(--border-glow);margin-bottom:24px;}
+  .sidebar-logo .logo-main{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.1rem;color:var(--neon-cyan);text-shadow:0 0 15px var(--neon-cyan);}
+  .sidebar-logo .logo-sub{font-family:'Share Tech Mono',monospace;font-size:0.6rem;letter-spacing:3px;color:var(--text-muted);margin-top:4px;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:12px 24px;cursor:pointer;transition:all 0.2s;color:var(--text-muted);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.95rem;letter-spacing:1px;}
+  .nav-item:hover,.nav-item.active{background:rgba(0,245,255,0.06);color:var(--neon-cyan);border-right:2px solid var(--neon-cyan);}
+  .nav-item .icon{font-size:1.1rem;width:24px;text-align:center;}
+  .sidebar-footer{margin-top:auto;padding:24px;border-top:1px solid var(--border-glow);}
+  .btn-logout{width:100%;background:transparent;border:1px solid var(--danger);color:var(--danger);padding:10px;font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:2px;cursor:pointer;transition:all 0.3s;}
+  .btn-logout:hover{background:var(--danger);color:#fff;}
+
+  /* MAIN */
+  .main-content{margin-left:260px;flex:1;padding:40px;min-height:100vh;}
+  .top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:40px;}
+  .page-heading{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.6rem;}
+  .page-heading .hl{color:var(--neon-cyan);}
+  .admin-badge{background:rgba(0,245,255,0.1);border:1px solid var(--border-glow);padding:8px 16px;font-family:'Share Tech Mono',monospace;font-size:0.7rem;letter-spacing:2px;color:var(--neon-cyan);}
+
+  /* STAT CARDS */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:40px;}
+  .stat-card{background:var(--dark-card);border:1px solid var(--border-glow);padding:24px;position:relative;overflow:hidden;transition:all 0.3s;}
+  .stat-card:hover{border-color:var(--neon-cyan);transform:translateY(-2px);}
+  .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .stat-card.cyan::after{background:linear-gradient(to right,var(--neon-cyan),transparent);}
+  .stat-card.magenta::after{background:linear-gradient(to right,var(--neon-magenta),transparent);}
+  .stat-card.gold::after{background:linear-gradient(to right,var(--neon-gold),transparent);}
+  .stat-card.green::after{background:linear-gradient(to right,var(--neon-green),transparent);}
+  .stat-icon{font-size:2rem;margin-bottom:12px;}
+  .stat-num{font-family:'Orbitron',sans-serif;font-size:2.2rem;font-weight:900;color:var(--text-primary);line-height:1;}
+  .stat-label{font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:2px;color:var(--text-muted);margin-top:6px;}
+
+  /* PANEL */
+  .panel-card{background:var(--dark-card);border:1px solid var(--border-glow);padding:32px;margin-bottom:28px;}
+  .panel-title{font-family:'Orbitron',sans-serif;font-size:0.8rem;font-weight:700;letter-spacing:3px;color:var(--neon-cyan);text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:12px;}
+  .panel-title::before{content:'';width:3px;height:16px;background:var(--neon-cyan);flex-shrink:0;}
+
+  /* FORM */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .form-group{margin-bottom:16px;}
+  .form-group label{display:block;font-family:'Share Tech Mono',monospace;font-size:0.6rem;letter-spacing:3px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;}
+  .form-group input, .form-group select, .form-group textarea{width:100%;background:rgba(0,245,255,0.03);border:1px solid var(--border-glow);color:var(--text-primary);padding:10px 14px;font-family:'Rajdhani',sans-serif;font-size:0.95rem;outline:none;transition:border-color 0.3s;resize:vertical;}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--neon-cyan);}
+  .form-group select option{background:var(--dark-card);}
+  .form-group textarea{min-height:80px;}
+  .form-actions{display:flex;gap:12px;margin-top:8px;}
+  .btn-save{background:var(--neon-cyan);color:var(--dark-bg);border:none;padding:12px 28px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:0.75rem;letter-spacing:2px;cursor:pointer;transition:all 0.3s;}
+  .btn-save:hover{background:var(--neon-gold);}
+  .btn-cancel{background:transparent;color:var(--text-muted);border:1px solid var(--border-glow);padding:12px 28px;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:2px;cursor:pointer;transition:all 0.3s;}
+  .btn-cancel:hover{border-color:var(--text-muted);color:var(--text-primary);}
+
+  /* EVENTS TABLE */
+  .events-table{width:100%;border-collapse:collapse;}
+  .events-table th{text-align:left;font-family:'Share Tech Mono',monospace;font-size:0.6rem;letter-spacing:3px;color:var(--text-muted);padding:8px 12px;border-bottom:1px solid var(--border-glow);}
+  .events-table td{padding:12px;border-bottom:1px solid rgba(0,245,255,0.06);font-size:0.9rem;vertical-align:middle;}
+  .events-table tr:hover td{background:rgba(0,245,255,0.02);}
+  .dept-tag{display:inline-block;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);color:var(--neon-cyan);padding:2px 10px;font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:2px;}
+  .action-btns{display:flex;gap:8px;}
+  .btn-edit{background:transparent;border:1px solid var(--neon-gold);color:var(--neon-gold);padding:6px 12px;font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:1px;cursor:pointer;transition:all 0.2s;}
+  .btn-edit:hover{background:var(--neon-gold);color:var(--dark-bg);}
+  .btn-del{background:transparent;border:1px solid var(--danger);color:var(--danger);padding:6px 12px;font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:1px;cursor:pointer;transition:all 0.2s;}
+  .btn-del:hover{background:var(--danger);color:#fff;}
+  .btn-add-event{background:transparent;border:1px solid var(--neon-green);color:var(--neon-green);padding:10px 20px;font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:2px;cursor:pointer;transition:all 0.3s;float:right;}
+  .btn-add-event:hover{background:var(--neon-green);color:var(--dark-bg);}
+
+  /* TABS */
+  .tab-row{display:flex;border-bottom:1px solid var(--border-glow);margin-bottom:32px;}
+  .tab{padding:12px 24px;font-family:'Orbitron',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:2px;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;transition:all 0.3s;text-transform:uppercase;}
+  .tab:hover{color:var(--text-primary);}
+  .tab.active{color:var(--neon-cyan);border-bottom-color:var(--neon-cyan);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* REGISTRATIONS */
+  .reg-table{width:100%;border-collapse:collapse;}
+  .reg-table th{text-align:left;font-family:'Share Tech Mono',monospace;font-size:0.6rem;letter-spacing:3px;color:var(--text-muted);padding:8px 12px;border-bottom:1px solid var(--border-glow);}
+  .reg-table td{padding:10px 12px;border-bottom:1px solid rgba(0,245,255,0.06);font-size:0.9rem;}
+  .reg-table tr:hover td{background:rgba(0,245,255,0.02);}
+  .toast{position:fixed;bottom:32px;right:32px;background:var(--neon-green);color:var(--dark-bg);padding:14px 24px;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:2px;z-index:500;transform:translateY(80px);opacity:0;transition:all 0.3s;}
+  .toast.show{transform:translateY(0);opacity:1;}
+
+  @media(max-width:900px){.stats-row{grid-template-columns:1fr 1fr;}.sidebar{display:none;}.main-content{margin-left:0;padding:20px;}.form-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">VALOROUS 2K26</div>
+    <div class="login-sub">// Admin Control Panel</div>
+    <div class="login-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="admin" value="admin">
+    </div>
+    <div class="login-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-err" id="loginErr">⚠ Invalid credentials</div>
+    <button class="btn-login" onclick="doLogin()">LOGIN →</button>
+    <div class="login-hint">Default: admin / valorous2k26</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard hidden" id="dashboard">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-main">VALOROUS 2K26</div>
+      <div class="logo-sub">// Admin Panel</div>
+    </div>
+    <div class="nav-item active" onclick="showTab('overview',this)"><span class="icon">📊</span> Overview</div>
+    <div class="nav-item" onclick="showTab('events',this)"><span class="icon">⚡</span> Events</div>
+    <div class="nav-item" onclick="showTab('registrations',this)"><span class="icon">📋</span> Registrations</div>
+    <div class="nav-item" onclick="showTab('analytics',this)"><span class="icon">📈</span> Analytics</div>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">LOGOUT</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="top-bar">
+      <div class="page-heading">Admin <span class="hl">Dashboard</span></div>
+      <div class="admin-badge">● ADMIN LOGGED IN</div>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="stats-row">
+        <div class="stat-card cyan"><div class="stat-icon">⚡</div><div class="stat-num" id="totalEvents">27</div><div class="stat-label">Total Events</div></div>
+        <div class="stat-card magenta"><div class="stat-icon">📋</div><div class="stat-num" id="totalRegs">0</div><div class="stat-label">Registrations</div></div>
+        <div class="stat-card gold"><div class="stat-icon">🏛️</div><div class="stat-num">9</div><div class="stat-label">Departments</div></div>
+        <div class="stat-card green"><div class="stat-icon">🏆</div><div class="stat-num">₹2L+</div><div class="stat-label">Prize Pool</div></div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Recent Registrations</div>
+        <table class="reg-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Event</th><th>College</th><th>Time</th></tr></thead>
+          <tbody id="recentRegsTbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;">No registrations yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Registrations by Department</div>
+        <div id="deptChart" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;height:150px;"></div>
+      </div>
+    </div>
+
+    <!-- EVENTS TAB -->
+    <div class="tab-panel" id="tab-events">
+      <div class="panel-card" id="addEventCard">
+        <div class="panel-title" style="justify-content:space-between">
+          <span>Add / Edit Event</span>
+          <button class="btn-add-event" onclick="resetForm()">+ New Event</button>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>Event Name *</label><input type="text" id="evName" placeholder="e.g. Code Clash"></div>
+          <div class="form-group"><label>Department *</label>
+            <select id="evDept">
+              <option value="">Select Department</option>
+              <option>CSE</option><option>IT</option><option>CSD</option><option>CSM</option><option>CSC</option><option>ECE</option><option>EEE</option><option>MECH</option><option>CIVIL</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>Date *</label><input type="text" id="evDate" placeholder="e.g. April 15, 2026"></div>
+          <div class="form-group"><label>Venue *</label><input type="text" id="evVenue" placeholder="e.g. Lab Block 3, Room 305"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>Prize</label><input type="text" id="evPrize" placeholder="e.g. ₹10,000"></div>
+          <div class="form-group"><label>Coordinator</label><input type="text" id="evCoord" placeholder="e.g. Dr. Priya Sharma"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>Contact</label><input type="text" id="evContact" placeholder="+91 00000 00000"></div>
+          <div class="form-group"><label>Emoji Icon</label><input type="text" id="evEmoji" placeholder="💻"></div>
+        </div>
+        <div class="form-group"><label>Short Description *</label><textarea id="evShortDesc" placeholder="Brief one-line description"></textarea></div>
+        <div class="form-group"><label>Full Description *</label><textarea id="evFullDesc" placeholder="Detailed description of the event"></textarea></div>
+        <div class="form-group"><label>Rules (one per line)</label><textarea id="evRules" placeholder="Rule 1&#10;Rule 2&#10;Rule 3" style="min-height:100px"></textarea></div>
+        <input type="hidden" id="evEditId">
+        <div class="form-actions">
+          <button class="btn-save" onclick="saveEvent()">SAVE EVENT</button>
+          <button class="btn-cancel" onclick="resetForm()">RESET</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">All Events</div>
+        <div style="overflow-x:auto">
+          <table class="events-table" id="eventsTable">
+            <thead><tr><th>#</th><th>Event</th><th>Dept</th><th>Date</th><th>Venue</th><th>Prize</th><th>Actions</th></tr></thead>
+            <tbody id="eventsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTRATIONS TAB -->
+    <div class="tab-panel" id="tab-registrations">
+      <div class="panel-card">
+        <div class="panel-title">All Registrations</div>
+        <div style="overflow-x:auto">
+          <table class="reg-table" id="regTable">
+            <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>College</th><th>Dept</th><th>Year</th><th>Event</th><th>Time</th></tr></thead>
+            <tbody id="regsTbody">
+              <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;">No registrations yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS TAB -->
+    <div class="tab-panel" id="tab-analytics">
+      <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card cyan"><div class="stat-icon">📅</div><div class="stat-num">Apr 15</div><div class="stat-label">Fest Day 1</div></div>
+        <div class="stat-card magenta"><div class="stat-icon">🎯</div><div class="stat-num">30+</div><div class="stat-label">Events Planned</div></div>
+        <div class="stat-card green"><div class="stat-icon">👥</div><div class="stat-num" id="uniqueColleges">0</div><div class="stat-label">Colleges Registered</div></div>
+      </div>
+      <div class="panel-card">
+        <div class="panel-title">Events per Department</div>
+        <div id="analyticsChart" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;"></div>
+      </div>
+      <div class="panel-card">
+        <div class="panel-title">Quick Stats</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="quickStats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── API CONFIG ───
+const API_BASE = 'http://localhost:5000/api';
+let JWT_TOKEN = sessionStorage.getItem('v2k26_token') || null;
+let adminEvents = [];
+let registrations = [];
+
+// ─── LOGIN ───
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  const btn = document.querySelector('.btn-login');
+  btn.textContent = 'LOGGING IN...';
+
+  try {
+    // Try real backend first
+    const res = await fetch(`${API_BASE}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p }),
+      signal: AbortSignal.timeout(4000)
+    });
+    const json = await res.json();
+    if (res.ok && json.token) {
+      JWT_TOKEN = json.token;
+      sessionStorage.setItem('v2k26_token', JWT_TOKEN);
+      showDashboard();
+      showToast('✅ Connected to live backend');
+      return;
+    }
+    document.getElementById('loginErr').style.display = 'block';
+  } catch {
+    // Backend offline — allow local login
+    if (u === 'admin' && p === 'valorous2k26') {
+      JWT_TOKEN = 'offline';
+      sessionStorage.setItem('v2k26_token', 'offline');
+      showDashboard();
+      showToast('⚠ Offline mode — backend not running');
+      return;
+    }
+    document.getElementById('loginErr').style.display = 'block';
+    document.getElementById('loginErr').textContent = '⚠ Cannot reach server. Use admin / valorous2k26 for offline mode.';
+  }
+  btn.textContent = 'LOGIN →';
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function showDashboard() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.querySelector('.btn-login').textContent = 'LOGIN →';
+  loadAll();
+}
+
+function logout() {
+  JWT_TOKEN = null;
+  sessionStorage.removeItem('v2k26_token');
+  adminEvents = [];
+  registrations = [];
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginErr').style.display = 'none';
+}
+
+// ─── HEADERS ───
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${JWT_TOKEN}` };
+}
+
+// ─── LOAD ALL DATA ───
+async function loadAll() {
+  await Promise.all([loadEvents(), loadRegistrations()]);
+  refreshOverview();
+}
+
+// ─── LOAD EVENTS ───
+async function loadEvents() {
+  if (JWT_TOKEN === 'offline') {
+    adminEvents = getDefaultEvents();
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/events`, { headers: authHeaders() });
+    const json = await res.json();
+    adminEvents = json.data.map(ev => ({
+      ...ev,
+      id: ev._id,
+      dept: ev.department,
+      name: ev.eventName,
+      shortDesc: ev.shortDescription,
+      fullDesc: ev.fullDescription,
+    }));
+  } catch {
+    adminEvents = getDefaultEvents();
+    showToast('⚠ Using offline data');
+  }
+}
+
+// ─── LOAD REGISTRATIONS ───
+async function loadRegistrations() {
+  if (JWT_TOKEN === 'offline') {
+    registrations = JSON.parse(localStorage.getItem('v2k26_offline_regs') || '[]');
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/registrations`, { headers: authHeaders() });
+    const json = await res.json();
+    registrations = json.data.map(r => ({
+      ...r,
+      time: r.createdAt ? new Date(r.createdAt).toLocaleString() : '—'
+    }));
+  } catch {
+    registrations = JSON.parse(localStorage.getItem('v2k26_offline_regs') || '[]');
+  }
+}
+
+function getDefaultEvents() {
+  return [
+    {id:'1',dept:'CSE',name:'Code Clash',emoji:'💻',shortDesc:'Competitive programming.',fullDesc:'Intense algorithmic programming contest.',rules:['Teams of 1-2','2 hours'],date:'April 15, 2026',venue:'Lab Block 3, Room 305',prize:'₹10,000',coordinator:'Dr. Priya Sharma',contact:'+91 98765 43210'},
+    {id:'2',dept:'CSE',name:'HackSprint',emoji:'🚀',shortDesc:'24-hour hackathon.',fullDesc:'Build innovative solutions in 24 hours.',rules:['Teams of 3-5','Working prototype required'],date:'April 15–16, 2026',venue:'Innovation Hub',prize:'₹25,000',coordinator:'Prof. Rahul Mehta',contact:'+91 98765 11111'},
+    {id:'3',dept:'IT',name:'Web Wizards',emoji:'🌐',shortDesc:'Build a website in 3 hours.',fullDesc:'Design a complete responsive website from scratch.',rules:['Teams of 1-2','3-hour limit'],date:'April 15, 2026',venue:'IT Lab, Room 201',prize:'₹8,000',coordinator:'Prof. Sneha Rao',contact:'+91 87654 32100'},
+    {id:'4',dept:'ECE',name:'IoT Storm',emoji:'📡',shortDesc:'Build an IoT prototype.',fullDesc:'Arduino/Pi smart city prototype.',rules:['Teams of 2-4','Kit provided'],date:'April 15–16, 2026',venue:'ECE Innovation Lab',prize:'₹15,000',coordinator:'Prof. Sujatha Rao',contact:'+91 97000 22222'},
+    {id:'5',dept:'MECH',name:'Robo Race',emoji:'🤖',shortDesc:'Program and race a robot.',fullDesc:'Build and race robot through obstacle course.',rules:['Teams of 2-4','Arduino kit provided'],date:'April 16, 2026',venue:'MECH Arena',prize:'₹12,000',coordinator:'Dr. Prasad Rao',contact:'+91 95000 33333'},
+  ];
+}
+
+// ─── TAB NAVIGATION ───
+function showTab(name, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'events') renderEventsTable();
+  if (name === 'registrations') renderRegsTable();
+  if (name === 'analytics') renderAnalytics();
+}
+
+// ─── TOAST ───
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── RENDER EVENTS TABLE ───
+function renderEventsTable() {
+  const tbody = document.getElementById('eventsTbody');
+  tbody.innerHTML = adminEvents.length === 0
+    ? '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem">No events found</td></tr>'
+    : adminEvents.map((ev, i) => `
+      <tr>
+        <td style="color:var(--text-muted);font-family:'Share Tech Mono',monospace;font-size:0.75rem">${i + 1}</td>
+        <td style="font-family:'Orbitron',sans-serif;font-size:0.85rem;font-weight:700">${ev.emoji || '⚡'} ${ev.name}</td>
+        <td><span class="dept-tag">${ev.dept}</span></td>
+        <td style="color:var(--text-muted);font-size:0.85rem">${ev.date || '—'}</td>
+        <td style="color:var(--text-muted);font-size:0.85rem">${ev.venue || '—'}</td>
+        <td style="color:var(--neon-gold);font-family:'Orbitron',sans-serif;font-size:0.8rem">${ev.prize || 'TBA'}</td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-edit" onclick="editEvent('${ev.id}')">EDIT</button>
+            <button class="btn-del" onclick="deleteEvent('${ev.id}')">DEL</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  document.getElementById('totalEvents').textContent = adminEvents.length;
+}
+
+// ─── EDIT EVENT ───
+function editEvent(id) {
+  const ev = adminEvents.find(e => String(e.id) === String(id));
+  if (!ev) return;
+  document.getElementById('evEditId').value = id;
+  document.getElementById('evName').value = ev.name || '';
+  document.getElementById('evDept').value = ev.dept || '';
+  document.getElementById('evDate').value = ev.date || '';
+  document.getElementById('evVenue').value = ev.venue || '';
+  document.getElementById('evPrize').value = ev.prize || '';
+  document.getElementById('evCoord').value = ev.coordinator || '';
+  document.getElementById('evContact').value = ev.contact || '';
+  document.getElementById('evEmoji').value = ev.emoji || '';
+  document.getElementById('evShortDesc').value = ev.shortDesc || '';
+  document.getElementById('evFullDesc').value = ev.fullDesc || '';
+  document.getElementById('evRules').value = (ev.rules || []).join('\n');
+  document.getElementById('addEventCard').scrollIntoView({ behavior: 'smooth' });
+  showToast('Editing: ' + ev.name);
+}
+
+// ─── DELETE EVENT ───
+async function deleteEvent(id) {
+  if (!confirm('Delete this event? This cannot be undone.')) return;
+  if (JWT_TOKEN !== 'offline') {
+    try {
+      const res = await fetch(`${API_BASE}/events/${id}`, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) { showToast('❌ Delete failed'); return; }
+    } catch { showToast('❌ Network error'); return; }
+  }
+  adminEvents = adminEvents.filter(e => String(e.id) !== String(id));
+  renderEventsTable();
+  refreshOverview();
+  showToast('✅ Event deleted');
+}
+
+// ─── SAVE EVENT (Add or Update) ───
+async function saveEvent() {
+  const name  = document.getElementById('evName').value.trim();
+  const dept  = document.getElementById('evDept').value;
+  const date  = document.getElementById('evDate').value.trim();
+  const venue = document.getElementById('evVenue').value.trim();
+  if (!name || !dept || !date || !venue) { alert('Please fill all required fields.'); return; }
+
+  const payload = {
+    eventName: name,
+    department: dept,
+    date, venue,
+    prize:            document.getElementById('evPrize').value.trim(),
+    coordinator:      document.getElementById('evCoord').value.trim(),
+    contact:          document.getElementById('evContact').value.trim(),
+    emoji:            document.getElementById('evEmoji').value.trim() || '⚡',
+    shortDescription: document.getElementById('evShortDesc').value.trim(),
+    fullDescription:  document.getElementById('evFullDesc').value.trim(),
+    rules:            document.getElementById('evRules').value.split('\n').filter(r => r.trim()),
+  };
+
+  const editId = document.getElementById('evEditId').value;
+  const btn = document.querySelector('.btn-save');
+  btn.textContent = 'SAVING...';
+
+  if (JWT_TOKEN !== 'offline') {
+    try {
+      const url    = editId ? `${API_BASE}/events/${editId}` : `${API_BASE}/events`;
+      const method = editId ? 'PUT' : 'POST';
+      const res    = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(payload) });
+      const json   = await res.json();
+      if (!res.ok) { showToast('❌ Save failed: ' + json.message); btn.textContent = 'SAVE EVENT'; return; }
+      // Update local array with returned data
+      const saved = { ...json.data, id: json.data._id, dept: json.data.department, name: json.data.eventName, shortDesc: json.data.shortDescription, fullDesc: json.data.fullDescription };
+      if (editId) {
+        const idx = adminEvents.findIndex(e => String(e.id) === String(editId));
+        if (idx !== -1) adminEvents[idx] = saved;
+      } else {
+        adminEvents.unshift(saved);
+      }
+    } catch { showToast('❌ Network error — changes saved locally only'); }
+  } else {
+    // Offline
+    const localData = { ...payload, id: editId || String(Date.now()), dept: payload.department, name: payload.eventName, shortDesc: payload.shortDescription, fullDesc: payload.fullDescription, emoji: payload.emoji };
+    if (editId) {
+      const idx = adminEvents.findIndex(e => String(e.id) === String(editId));
+      if (idx !== -1) adminEvents[idx] = localData;
+    } else {
+      adminEvents.unshift(localData);
+    }
+  }
+
+  btn.textContent = 'SAVE EVENT';
+  renderEventsTable();
+  refreshOverview();
+  resetForm();
+  showToast(editId ? '✅ Event updated!' : '✅ Event added!');
+}
+
+function resetForm() {
+  document.getElementById('evEditId').value = '';
+  ['evName','evDate','evVenue','evPrize','evCoord','evContact','evEmoji','evShortDesc','evFullDesc','evRules'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('evDept').value = '';
+}
+
+// ─── RENDER REGISTRATIONS ───
+function renderRegsTable() {
+  const tbody = document.getElementById('regsTbody');
+  if (!registrations.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;">No registrations yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = registrations.map((r, i) => `
+    <tr>
+      <td style="color:var(--text-muted)">${i + 1}</td>
+      <td style="font-weight:600">${r.name}</td>
+      <td style="color:var(--text-muted)">${r.email}</td>
+      <td style="color:var(--text-muted)">${r.phone}</td>
+      <td>${r.college}</td>
+      <td><span class="dept-tag">${r.department || r.dept || '—'}</span></td>
+      <td style="color:var(--text-muted)">${r.year}</td>
+      <td style="color:var(--neon-cyan);font-family:'Orbitron',sans-serif;font-size:0.75rem">${r.eventName || '—'}</td>
+      <td style="color:var(--text-muted);font-size:0.8rem">${r.time || r.createdAt || '—'}</td>
+    </tr>`).join('');
+}
+
+// ─── OVERVIEW REFRESH ───
+function refreshOverview() {
+  document.getElementById('totalEvents').textContent = adminEvents.length;
+  document.getElementById('totalRegs').textContent = registrations.length;
+
+  const depts = ['CSE','IT','CSD','CSM','CSC','ECE','EEE','MECH','CIVIL'];
+  const regCounts = {};
+  depts.forEach(d => regCounts[d] = registrations.filter(r => (r.department||r.dept) === d).length);
+  const max = Math.max(...Object.values(regCounts), 1);
+
+  document.getElementById('deptChart').innerHTML = depts.map(d => `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:40px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--neon-cyan)">${regCounts[d]}</div>
+      <div style="width:100%;background:rgba(0,245,255,0.08)"><div style="height:${Math.max(4, regCounts[d] / max * 100)}px;background:var(--neon-cyan);opacity:0.7;transition:height 0.5s"></div></div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--text-muted)">${d}</div>
+    </div>`).join('');
+
+  // Recent registrations
+  const recent = [...registrations].slice(0, 5);
+  document.getElementById('recentRegsTbody').innerHTML = recent.length
+    ? recent.map(r => `<tr>
+        <td style="font-weight:600">${r.name}</td>
+        <td style="color:var(--text-muted)">${r.email}</td>
+        <td style="color:var(--neon-cyan);font-family:'Orbitron',sans-serif;font-size:0.75rem">${r.eventName || '—'}</td>
+        <td>${r.college}</td>
+        <td style="color:var(--text-muted);font-size:0.8rem">${r.time || '—'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;">No registrations yet</td></tr>';
+}
+
+// ─── ANALYTICS ───
+function renderAnalytics() {
+  const depts = ['CSE','IT','CSD','CSM','CSC','ECE','EEE','MECH','CIVIL'];
+  const evCounts = {};
+  depts.forEach(d => evCounts[d] = adminEvents.filter(e => e.dept === d).length);
+  const max = Math.max(...Object.values(evCounts), 1);
+  const colors = ['--neon-cyan','--neon-magenta','--neon-gold','--neon-green','--neon-cyan','--neon-magenta','--neon-gold','--neon-green','--neon-cyan'];
+
+  document.getElementById('analyticsChart').innerHTML = depts.map((d, i) => `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:60px">
+      <div style="font-family:'Orbitron',sans-serif;font-size:0.7rem;color:var(${colors[i]})">${evCounts[d]}</div>
+      <div style="width:100%;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.2)">
+        <div style="height:${Math.max(8, evCounts[d] / max * 120)}px;background:var(${colors[i]});opacity:0.7;transition:height 0.5s"></div>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--text-muted)">${d}</div>
+    </div>`).join('');
+
+  const colleges = new Set(registrations.map(r => r.college).filter(Boolean));
+  document.getElementById('uniqueColleges').textContent = colleges.size;
+
+  document.getElementById('quickStats').innerHTML = `
+    <div style="background:rgba(0,245,255,0.05);border:1px solid var(--border-glow);padding:16px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;letter-spacing:2px">TOTAL EVENTS</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--neon-cyan)">${adminEvents.length}</div>
+    </div>
+    <div style="background:rgba(255,0,170,0.05);border:1px solid var(--border-glow);padding:16px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;letter-spacing:2px">TOTAL REGISTRATIONS</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--neon-magenta)">${registrations.length}</div>
+    </div>
+    <div style="background:rgba(255,215,0,0.05);border:1px solid var(--border-glow);padding:16px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;letter-spacing:2px">DEPARTMENTS ACTIVE</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--neon-gold)">9</div>
+    </div>
+    <div style="background:rgba(0,255,136,0.05);border:1px solid var(--border-glow);padding:16px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;letter-spacing:2px">UNIQUE COLLEGES</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--neon-green)">${colleges.size}</div>
+    </div>`;
+
+  // Fetch live analytics from backend if online
+  if (JWT_TOKEN !== 'offline') {
+    fetch(`${API_BASE}/admin/analytics`, { headers: authHeaders() })
+      .then(r => r.json())
+      .then(json => {
+        if (json.data) {
+          document.getElementById('uniqueColleges').textContent = json.data.uniqueColleges || colleges.size;
+        }
+      }).catch(() => {});
+  }
+}
+</script>
+</body>
+</html>
