@@ -245,9 +245,9 @@ app.get('/api/admin/analytics', authMiddleware, async (req, res) => {
 });
 
 // ─── SERVE FRONTEND ───
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '..')));
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  res.sendFile(path.join(__dirname, '../index.html'));
 });
 
 // ─── START ───
